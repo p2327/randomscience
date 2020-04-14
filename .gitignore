@@ -1,0 +1,9 @@
+*.pyc
+__pycache__
+.stack-work
+/bower_components/
+/node_modules/
+/.pulp-cache/
+/.purs-repl
+/output/
+/dist/
