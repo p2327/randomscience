@@ -123,6 +123,33 @@ let upstream =
 
 let overrides = {=}
 
-let additions = {=}
+let additions = {=} 
 
 in  upstream // overrides // additions
+
+
+{-
+    { purescript-pux = 
+        { dependencies =
+            [ "console"
+            , "aff"
+            , "foreign"
+            ]
+        , repo = 
+            "https://github.com/alexmingoia/purescript-pux.git"
+        , version = "9c43e41aaf438101286c9c8cf2b600558b1904ed"
+        }
+    }
+
+
+Full dependences for old version on Pux
+
+    "purescript-console": "^0.1.0",
+    "purescript-pux": "~0.1.0",
+    "purescript-lists": "~0.7.9",
+    "purescript-maps": "~0.5.4", >>> merged in ordered-collections
+    "purescript-react": "~0.6.0",
+    "purescript-foldable-traversable": "~0.4.2",
+    "purescript-aff": "~0.14.0",
+    "purescript-affjax": "~0.10.3"
+-}
