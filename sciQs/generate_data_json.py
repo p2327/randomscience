@@ -46,7 +46,7 @@ def collect(questions: List[str], patterns: List[str] = splits) -> Tuple[List[st
         else:
             # Executed only when the loop is not terminated by break
             # This finds elements that the if does not catch
-            print(q + '\n')
+            # print(q + '\n')
 
     return q_list, a_list
 

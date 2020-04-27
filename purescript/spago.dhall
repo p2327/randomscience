@@ -8,12 +8,16 @@ You can edit this file as you like.
   , "affjax"
   , "arrays"
   , "console"
+  , "css"
   , "effect"
   , "foldable-traversable"
+  , "halogen"
+  , "halogen-css"
   , "math"
   , "ordered-collections"
   , "psci-support"
-  , "react"
+  , "random"
+  , "run"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
