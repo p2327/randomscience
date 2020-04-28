@@ -11,3 +11,5 @@
 /.js*
 /app.*
 /*parcelified
+/.cache
+/dist
