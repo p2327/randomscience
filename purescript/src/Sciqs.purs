@@ -20,7 +20,6 @@ type Question
   = { questionText :: String
     , answers :: Array String
     , correctAnswer :: Int
-    , chosenAnswer  :: Maybe AnswerId
     }
 
 -- Type aliases
@@ -39,18 +38,20 @@ data Action =
   | ClickAnswer QuestionId AnswerId  -- click on an answer
   | QuestionReceived Question        -- receive an AJAX response with a question
 
+data Status
+  = WaitingForQuestion
+  | HaveQuestion Question (Maybe AnswerId)
 
 type State = {
   score              :: Int,
-  questions          :: Array Question,
-  waitingForQuestion :: Boolean -- are we waiting for an AJAX call to return?
+  status             :: Status
 }
-
 
 -- | Start out with no questions.
 initialState :: State
-initialState = { score: 0, questions: [], waitingForQuestion: true }
+initialState = { score: 0, status: WaitingForQuestion }
 
+{-
 
 -- | When you click on questionId answerId, we need to update the score,
 -- | set the chosenAnswer field for that question, and set the
@@ -105,6 +106,7 @@ update action state input =
         liftEff $ case question of
           (Left err) -> log "Error parsing JSON!"
           (Right question) -> S.send input (singleton (QuestionReceived question))
+-}
 
 main :: Effect Unit
 main =
