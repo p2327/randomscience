@@ -18,6 +18,7 @@ You can edit this file as you like.
   , "psci-support"
   , "random"
   , "run"
+  , "simple-json"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
