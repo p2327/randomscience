@@ -12,6 +12,7 @@ You can edit this file as you like.
   , "effect"
   , "foldable-traversable"
   , "halogen"
+  , "halogen-bootstrap4"
   , "halogen-css"
   , "math"
   , "ordered-collections"
