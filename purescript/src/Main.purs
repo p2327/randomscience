@@ -10,6 +10,7 @@ import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Halogen as H
 import Halogen.Aff as HA
+import Halogen.HTML (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -32,6 +33,7 @@ data Action
   = NewGame
   | ClickAnswer Int
   | NextQuestion
+  | Toggle -- Added Toggle for handling button color change
 
 data Status
   = WaitingForQuestion
@@ -39,17 +41,36 @@ data Status
   | Failure String
 
 type State
-  = { score :: Int
+  = { score  :: Int
     , status :: Status
     }
 
--- | Start out with no questions.
+-- State of button
+type ButtonState
+  = Boolean
+
+-- Change class of button to handle color
+-- Maybe I can just handle changing mkButton?
+toggleButtonClass :: forall m. ButtonState -> H.ComponentHTML Action () m
+toggleButtonClass isClicked =
+    let
+      toggleLabel = if isClicked then "clickedButton" else "notClickedButton"
+    in
+      HH.button
+        [ HP.class_ $ ClassName toggleLabel
+        , HE.onClick \_ -> Just Toggle
+        ]
+
+
+-- Start out with no questions.
 initialState :: State
 initialState = { score: 0, status: WaitingForQuestion }
 
 -- Helper function for creating buttons that trigger an action
 mkButton :: forall a. String -> Action -> HH.HTML a Action
 mkButton str act =
+  --let
+    --toggleLabel = if isClicked then "clickedButton" else "notClickedButton"
   HH.button
     [ HP.classes [ B.btnLg, B.btnBlock ]
     , HE.onClick \_ -> Just act
@@ -105,6 +126,10 @@ handleAction = case _ of
         in
           s { status = HaveQuestion q (Just idx), score = s.score + points }
       _ -> s { status = Failure $ "Somehow clicked idx " <> show idx <> " when not in question display state" }
+    -- Add action to change button color
+    H.modify_ \s -> case s.action of
+      Toggle -> do
+        H.modify_ \oldState -> not oldState
   NextQuestion -> do
     H.modify_ \s -> s { status = WaitingForQuestion }
     result <- liftAff $ AX.get ResponseFormat.string questionServiceUrl

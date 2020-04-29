@@ -4,71 +4,12 @@
 
 <head>
   <style>
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 500px;
-      width: 200px;
-      height: 100%;
-      border-left: solid black 1px;
-      margin: 10px;
-      padding: 10px;
-    }
-    a {
-      text-decoration: initial;
-      padding: 3px;
-    }
-    .score {
-      font-size: 50px;
-    }
-    button {
-      margin: 15px;
-    }
-
-    .question {
-      max-width: 480px;
-      font-weight: bold;
-      font-size: 20px;
-      margin: 10px;
-      margin-top: 40px;
-    }
-    .answer {
-      max-width: 400px;
-      padding: 5px;
-      margin-top: 5px;
-      margin-bottom: 5px;
-      border: 1px solid black;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    
-    .answer.unanswered {
-      background-color: lightgray;
-    }
-    
-    .answer.chosen {
-      border: 3px solid black;
-      margin: 0px;
-    }
-    
-    .answer.correct {
-      background-color: lightgreen;
-      cursor: default;
-    }
-    
-    .answer.correct.chosen {
-      background-color: green;
+    .clickedButton {
+      background-color: rgb(33, 131, 38);
       color: white;
     }
-    
-    .answer.wrong {
-      background-color: salmon;
-      cursor: default;
-    }
-    
-    .answer.wrong.chosen {
-      background-color: red;
+    .notClickedButton {
+      background-color: rgb(129, 129, 129);
       color: white;
     }
   </style>
