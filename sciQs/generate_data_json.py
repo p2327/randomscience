@@ -21,7 +21,7 @@ Matches
     - a period
     - a comma
     - a question mark
-    - a word containing non of the above or spaces
+    - a word containing none of the above or spaces
 """
 regex = r"[^ ?\.,]+|\?|\.|\,"
 

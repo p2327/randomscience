@@ -13,6 +13,7 @@ You can edit this file as you like.
   , "foldable-traversable"
   , "halogen"
   , "halogen-css"
+  , "halogen-bootstrap4"
   , "math"
   , "ordered-collections"
   , "psci-support"
