@@ -18,6 +18,12 @@ import Halogen.Themes.Bootstrap4 as B
 import Halogen.VDom.Driver (runUI)
 import Simple.JSON as SimpleJSON
 
+import Halogen.HTML (ClassName(..))                -- As above
+-- import Halogen.HTML.Properties (ButtonType(..)) -- Added to specify button properties
+-- import Halogen.HTML.Properties as HP            -- As above
+-- import Halogen.HTML (ClassName(..))             -- As above
+
+
 -- Server url
 questionServiceUrl :: String
 questionServiceUrl = "http://localhost:8080/question"
@@ -33,7 +39,7 @@ data Action
   = NewGame
   | ClickAnswer Int
   | NextQuestion
-  | Toggle -- Added Toggle for handling button color change
+  | Toggle Boolean -- Added Toggle for handling button color change
 
 data Status
   = WaitingForQuestion
@@ -46,15 +52,15 @@ type State
     }
 
 -- State of button
-type ButtonState
-  = Boolean
+--type ButtonState
+ -- = Boolean
 
+{-
 -- Query approach for button class change
 data Query a
   = UpdateButtonState a
   | GetButtonState
 
-{-
 -- Change class of button to handle color
 -- Maybe I can just handle changing mkButton?
 toggleButtonClass :: forall m. ButtonState -> H.ComponentHTML Action () m
@@ -78,8 +84,9 @@ mkButton str act =
   --let
     --toggleLabel = if isClicked then "clickedButton" else "notClickedButton"
   HH.button
-    [ HP.classes [ B.btnLg, B.btnBlock ]
-    , HE.onClick \_ -> Just act
+    [ -- HP.classes [ B.btnLg, B.btnBlock ]
+      HE.onClick \_ -> Just act
+    , HE.onClick \_ -> Just Toggle
     ]
     [ HH.text str ]
 
@@ -106,16 +113,9 @@ render s =
           HH.div_
             $ [ HH.text question.questionText
               ]
-            <> mapWithIndex (\idx txt -> HH.div_ [ mkButton txt $ ClickAnswer idx ]) question.answers
+            <> mapWithIndex (\idx txt -> HH.div_ 
+                                          [ mkButton txt $ ClickAnswer idx ]) question.answers
             <> answerSummary
-          -- Adding input and query handler to change CSS class
-              [ HH.button
-                [ HE.onClick (HE.input_ UpdateButtonState)
-                , HP.classes $ map className 
-                  [ if true then "clickedButton" else "notClickedButton"
-                  ] 
-                ]
-              ]
       Failure str -> HH.text $ "Failed: " <> str
   in
     HH.div [ HP.classes [ B.containerFluid ] ]
@@ -126,13 +126,13 @@ render s =
       , questionBlock
       ]
 
--- Evaluate input query
+{-- Evaluate input query
 eval :: Query ~> H.ComponentDSL ButtonState Query Void m
 eval (UpdateButtonState next) = do
   H.modify_ not
   pure next
 eval (GetButtonState reply) = do
-    reply <$> H.get
+    reply <$> H.get -}
 
 -- | Shows how to use actions to update the component's state
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
@@ -149,9 +149,8 @@ handleAction = case _ of
           s { status = HaveQuestion q (Just idx), score = s.score + points }
       _ -> s { status = Failure $ "Somehow clicked idx " <> show idx <> " when not in question display state" }
     -- Add action to change button color
-    H.modify_ \s -> case s.action of
-      Toggle -> do
-        H.modify_ \oldState -> not oldState
+  Toggle -> do
+    H.modify_ \oldState -> not oldState
   NextQuestion -> do
     H.modify_ \s -> s { status = WaitingForQuestion }
     result <- liftAff $ AX.get ResponseFormat.string questionServiceUrl
