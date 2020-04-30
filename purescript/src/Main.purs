@@ -49,6 +49,12 @@ type State
 type ButtonState
   = Boolean
 
+-- Query approach for button class change
+data Query a
+  = UpdateButtonState a
+  | GetButtonState
+
+{-
 -- Change class of button to handle color
 -- Maybe I can just handle changing mkButton?
 toggleButtonClass :: forall m. ButtonState -> H.ComponentHTML Action () m
@@ -60,7 +66,7 @@ toggleButtonClass isClicked =
         [ HP.class_ $ ClassName toggleLabel
         , HE.onClick \_ -> Just Toggle
         ]
-
+-}
 
 -- Start out with no questions.
 initialState :: State
@@ -102,6 +108,14 @@ render s =
               ]
             <> mapWithIndex (\idx txt -> HH.div_ [ mkButton txt $ ClickAnswer idx ]) question.answers
             <> answerSummary
+          -- Adding input and query handler to change CSS class
+              [ HH.button
+                [ HE.onClick (HE.input_ UpdateButtonState)
+                , HP.classes $ map className 
+                  [ if true then "clickedButton" else "notClickedButton"
+                  ] 
+                ]
+              ]
       Failure str -> HH.text $ "Failed: " <> str
   in
     HH.div [ HP.classes [ B.containerFluid ] ]
@@ -111,6 +125,14 @@ render s =
       , HH.div_ [ HH.text $ "Score: " <> show s.score ]
       , questionBlock
       ]
+
+-- Evaluate input query
+eval :: Query ~> H.ComponentDSL ButtonState Query Void m
+eval (UpdateButtonState next) = do
+  H.modify_ not
+  pure next
+eval (GetButtonState reply) = do
+    reply <$> H.get
 
 -- | Shows how to use actions to update the component's state
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
