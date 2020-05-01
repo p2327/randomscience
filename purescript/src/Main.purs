@@ -18,12 +18,6 @@ import Halogen.Themes.Bootstrap4 as B
 import Halogen.VDom.Driver (runUI)
 import Simple.JSON as SimpleJSON
 
-import Halogen.HTML (ClassName(..))                -- As above
--- import Halogen.HTML.Properties (ButtonType(..)) -- Added to specify button properties
--- import Halogen.HTML.Properties as HP            -- As above
--- import Halogen.HTML (ClassName(..))             -- As above
-
-
 -- Server url
 questionServiceUrl :: String
 questionServiceUrl = "http://localhost:8080/question"
@@ -37,9 +31,9 @@ type Question
 
 data Action
   = NewGame
-  | ClickAnswer Int
+  | ClickAnswer Int -- This action handles both creation and color
   | NextQuestion
-  | Toggle Boolean -- Added Toggle for handling button color change
+  | Toggle
 
 data Status
   = WaitingForQuestion
@@ -47,46 +41,24 @@ data Status
   | Failure String
 
 type State
-  = { score  :: Int
-    , status :: Status
+  = { score         :: Int
+    , status        :: Status
+    , buttonClicked :: Boolean
     }
 
--- State of button
---type ButtonState
- -- = Boolean
-
-{-
--- Query approach for button class change
-data Query a
-  = UpdateButtonState a
-  | GetButtonState
-
--- Change class of button to handle color
--- Maybe I can just handle changing mkButton?
-toggleButtonClass :: forall m. ButtonState -> H.ComponentHTML Action () m
-toggleButtonClass isClicked =
-    let
-      toggleLabel = if isClicked then "clickedButton" else "notClickedButton"
-    in
-      HH.button
-        [ HP.class_ $ ClassName toggleLabel
-        , HE.onClick \_ -> Just Toggle
-        ]
--}
 
 -- Start out with no questions.
 initialState :: State
-initialState = { score: 0, status: WaitingForQuestion }
+initialState = { score: 0, status: WaitingForQuestion, buttonClicked: false }
 
 -- Helper function for creating buttons that trigger an action
-mkButton :: forall a. String -> Action -> HH.HTML a Action
-mkButton str act =
-  --let
-    --toggleLabel = if isClicked then "clickedButton" else "notClickedButton"
+mkButton :: forall a. State -> String -> Action -> HH.HTML a Action
+mkButton s str act =
   HH.button
     [ -- HP.classes [ B.btnLg, B.btnBlock ]
-      HE.onClick \_ -> Just act
-    , HE.onClick \_ -> Just Toggle
+      --HP.class_ $ ClassName "clickedButton"
+      HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
+    , HE.onClick \_ -> Just act
     ]
     [ HH.text str ]
 
@@ -113,26 +85,23 @@ render s =
           HH.div_
             $ [ HH.text question.questionText
               ]
-            <> mapWithIndex (\idx txt -> HH.div_ 
-                                          [ mkButton txt $ ClickAnswer idx ]) question.answers
+            <> mapWithIndex (\idx txt -> HH.div_ [ mkButton s txt $ ClickAnswer idx ]) question.answers
             <> answerSummary
+            {-- Trying to add a button here, but should probably be in the constructor
+            HH.button
+              [ HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
+              , HE.onClick \_ -> Just ClickAnswer 
+              ]-}  
       Failure str -> HH.text $ "Failed: " <> str
   in
     HH.div [ HP.classes [ B.containerFluid ] ]
       [ HH.div [ HP.classes [ B.h1 ] ] [ HH.text "SciQs" ]
-      , HH.div_ [ mkButton "New Game" NewGame ]
-      , HH.div_ [ mkButton "Next Question" NextQuestion ]
+      , HH.div_ [ mkButton s "New Game" NewGame ]
+      , HH.div_ [ mkButton s "Next Question" NextQuestion ]
       , HH.div_ [ HH.text $ "Score: " <> show s.score ]
       , questionBlock
       ]
 
-{-- Evaluate input query
-eval :: Query ~> H.ComponentDSL ButtonState Query Void m
-eval (UpdateButtonState next) = do
-  H.modify_ not
-  pure next
-eval (GetButtonState reply) = do
-    reply <$> H.get -}
 
 -- | Shows how to use actions to update the component's state
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
@@ -140,7 +109,8 @@ handleAction = case _ of
   NewGame -> do
     H.modify_ \s -> s { score = 0 }
     handleAction NextQuestion
-  ClickAnswer idx ->
+  ClickAnswer idx -> do
+    -- Handles 2 actions with H.modify and recursive call to handleAction Toggle
     H.modify_ \s -> case s.status of
       HaveQuestion q _ ->
         let
@@ -148,9 +118,7 @@ handleAction = case _ of
         in
           s { status = HaveQuestion q (Just idx), score = s.score + points }
       _ -> s { status = Failure $ "Somehow clicked idx " <> show idx <> " when not in question display state" }
-    -- Add action to change button color
-  Toggle -> do
-    H.modify_ \oldState -> not oldState
+    handleAction Toggle
   NextQuestion -> do
     H.modify_ \s -> s { status = WaitingForQuestion }
     result <- liftAff $ AX.get ResponseFormat.string questionServiceUrl
@@ -160,15 +128,15 @@ handleAction = case _ of
         Right (r :: Question) -> do
           H.modify_ \s -> s { status = HaveQuestion r Nothing }
         Left e -> H.modify_ \s -> s { status = Failure $ "Can't parse JSON. " <> show e }
+  Toggle ->  
+    H.modify_ \s -> s { buttonClicked = not s.buttonClicked }
 
 component :: forall q i o m. MonadAff m => H.Component HH.HTML q i o m
 component =
   H.mkComponent
     { initialState: const initialState
     , render
-    , eval:
-        H.mkEval
-          $ H.defaultEval
+    , eval: H.mkEval $ H.defaultEval
               { handleAction = handleAction
               , initialize = Just NewGame
               }
