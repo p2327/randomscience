@@ -33,7 +33,7 @@ data Action
   = NewGame
   | ClickAnswer Int -- This action handles both creation and color
   | NextQuestion
-  | Toggle
+  | Toggle Int
 
 data Status
   = WaitingForQuestion
@@ -43,21 +43,24 @@ data Status
 type State
   = { score         :: Int
     , status        :: Status
-    , buttonClicked :: Boolean
+    --, buttonClicked :: Boolean
+    , buttonClicked :: Maybe Int
     }
 
 
 -- Start out with no questions.
 initialState :: State
-initialState = { score: 0, status: WaitingForQuestion, buttonClicked: false }
+initialState = { score: 0, status: WaitingForQuestion, buttonClicked: Nothing } --buttonClicked: false }
 
 -- Helper function for creating buttons that trigger an action
-mkButton :: forall a. State -> String -> Action -> HH.HTML a Action
-mkButton s str act =
+mkButton :: forall a. State -> Int -> String -> Action -> HH.HTML a Action
+mkButton s idx str act =
   HH.button
     [ -- HP.classes [ B.btnLg, B.btnBlock ]
-      --HP.class_ $ ClassName "clickedButton"
-      HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
+      --HP.classes if s.buttonClicked == Just idx then [ B.btnSucces, B.btnBlock] else [ B.btnLg, B.btnBlock ]
+      HP.class_ $ HH.ClassName $ if s.buttonClicked == Just idx then "clickedButton" else "notClickedButton"
+      --HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
+      --HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
     , HE.onClick \_ -> Just act
     ]
     [ HH.text str ]
@@ -85,19 +88,14 @@ render s =
           HH.div_
             $ [ HH.text question.questionText
               ]
-            <> mapWithIndex (\idx txt -> HH.div_ [ mkButton s txt $ ClickAnswer idx ]) question.answers
+            <> mapWithIndex (\idx txt -> HH.div_ [ mkButton s idx txt $ ClickAnswer idx ]) question.answers
             <> answerSummary
-            {-- Trying to add a button here, but should probably be in the constructor
-            HH.button
-              [ HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
-              , HE.onClick \_ -> Just ClickAnswer 
-              ]-}  
       Failure str -> HH.text $ "Failed: " <> str
   in
     HH.div [ HP.classes [ B.containerFluid ] ]
       [ HH.div [ HP.classes [ B.h1 ] ] [ HH.text "SciQs" ]
-      , HH.div_ [ mkButton s "New Game" NewGame ]
-      , HH.div_ [ mkButton s "Next Question" NextQuestion ]
+      , HH.div_ [ mkButton s 0 "New Game" NewGame ] -- remove these 0s
+      , HH.div_ [ mkButton s 0 "Next Question" NextQuestion ]
       , HH.div_ [ HH.text $ "Score: " <> show s.score ]
       , questionBlock
       ]
@@ -115,10 +113,11 @@ handleAction = case _ of
       HaveQuestion q _ ->
         let
           points = if idx == q.correctAnswer then 1 else 0
+          --correctIdx = if idx == q.correctAnswer then Just idx else Nothing
         in
           s { status = HaveQuestion q (Just idx), score = s.score + points }
       _ -> s { status = Failure $ "Somehow clicked idx " <> show idx <> " when not in question display state" }
-    handleAction Toggle
+    handleAction Toggle idx
   NextQuestion -> do
     H.modify_ \s -> s { status = WaitingForQuestion }
     result <- liftAff $ AX.get ResponseFormat.string questionServiceUrl
@@ -128,8 +127,16 @@ handleAction = case _ of
         Right (r :: Question) -> do
           H.modify_ \s -> s { status = HaveQuestion r Nothing }
         Left e -> H.modify_ \s -> s { status = Failure $ "Can't parse JSON. " <> show e }
-  Toggle ->  
-    H.modify_ \s -> s { buttonClicked = not s.buttonClicked }
+  Toggle idx ->
+    H.modify_ \s -> case s.buttonClicked of 
+      IsCorrect q _ ->
+        let 
+          correctIdx = if idx == q.correctAnswer then Just idx else Nothing
+        in
+          s { buttonClicked = Just correctIdx } 
+      _ -> s { buttonClicked = Nothing}  
+    --H.modify_ \s -> s { buttonClicked = not s.buttonClicked }
+    --H.modify_ \s -> s { buttonClicked = Just idx }
 
 component :: forall q i o m. MonadAff m => H.Component HH.HTML q i o m
 component =
