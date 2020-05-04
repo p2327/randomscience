@@ -1,10 +1,11 @@
 module Main where
 
+import Data.Array
 import Prelude
+
 import Affjax as AX
 import Affjax.ResponseFormat as ResponseFormat
 import Data.Array (mapWithIndex)
-import Data.Array
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
@@ -41,7 +42,7 @@ data Status
   | Failure String                     -- Failed to get server response
 
 type State
-  = { score         :: Int             
+  = { score         :: Int
     , status        :: Status
     , buttonClicked :: Maybe Int       -- What button has been clicked
     }
@@ -99,7 +100,7 @@ render s =
               [ B.btnLg, B.btnOutlineSecondary]
           _ -> [ B.btnLg, B.btnOutlineDark ]             -- If no answer has been clicked, style is just large button
 
-        act = case s.status of         -- On click, triggers ClickAnswer 
+        act = case s.status of         -- On click, triggers ClickAnswer
           HaveQuestion q Nothing -> Just $ ClickAnswer idx
           _ -> Nothing
       in
@@ -108,8 +109,8 @@ render s =
           , HP.classes style
           ]
           [ HH.text str ]
-    
-    nextQuestionBtn = case s.status of  -- Renders the next question button       
+
+    nextQuestionBtn = case s.status of  -- Renders the next question button
       HaveQuestion q (Just i) ->        -- only when HaveQuestion is not Nothing
         [ HH.button
             [ --HP.class_ $ B.btnLg
@@ -120,13 +121,22 @@ render s =
         ]
       _ -> []
   in
-    HH.div [ HP.classes [ B.containerFluid ] ]
-      $ [ HH.div [ HP.classes [ B.h1 ] ] [ HH.text "SciQs" ]
-        , HH.div_ [ mkButton "New Game" NewGame ]
-        , HH.div_ [ HH.text $ "Score: " <> show s.score ]
-        , questionBlock
+    HH.div [ HP.class_ B.containerFluid ]
+      $ [ HH.div [ HP.class_ B.row]
+          -- Text centering only works if wrapped in column - https://stackoverflow.com/a/47269661
+          [ HH.div [ HP.classes [B.col, B.h1, B.textCenter]]
+            [ HH.text "SciQs" ]
+          ]
+        , HH.div [ HP.class_ B.row]
+          [ HH.div [ HP.classes [ B.col]]
+            [ HH.div_ [ mkButton "New Game" NewGame ]
+            , HH.div_ [ HH.text $ "Score: " <> show s.score ]
+            ]
+          , HH.div [ HP.classes [ B.col]]
+            [ questionBlock ]
+          ]
+        , HH.div [ HP.classes [ B.row]] nextQuestionBtn
         ]
-      <> nextQuestionBtn                -- Append this button ouside the div
 
 -- | Shows how to use actions to update the component's state
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
