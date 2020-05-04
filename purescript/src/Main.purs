@@ -1,10 +1,12 @@
 module Main where
 
+import Data.Array
 import Prelude
+
 import Affjax as AX
 import Affjax.ResponseFormat as ResponseFormat
 import Data.Array (mapWithIndex)
-import Data.Array
+
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
@@ -55,7 +57,7 @@ mkButton :: forall a. String -> Action -> HH.HTML a Action
 mkButton str act =
   HH.button
     [ HE.onClick \_ -> Just act
-    , HP.classes [ B.btnLg, B.btnInfo ]
+    , HP.classes [ B.btnLg, B.btnOutlineInfo ]
     ]
     [ HH.text str ]
 
@@ -84,6 +86,7 @@ render s =
               ]
             <> mapWithIndex (\idx txt -> HH.div_ [ mkAnswerButton idx txt ]) question.answers
             <> answerSummary
+            <> nextQuestionBtn
       Failure str -> HH.text $ "Failed: " <> str
 
     mkAnswerButton idx str =           -- Renders a button that:
@@ -95,7 +98,7 @@ render s =
                 [ B.btnLg, B.btnSuccess ]
               else
                 [ B.btnLg, B.btnDanger ]
-            else                       -- Buttons not clickec
+            else                       -- Buttons not clicked
               [ B.btnLg, B.btnOutlineSecondary]
           _ -> [ B.btnLg, B.btnOutlineDark ]             -- If no answer has been clicked, style is just large button
 
@@ -113,20 +116,34 @@ render s =
       HaveQuestion q (Just i) ->        -- only when HaveQuestion is not Nothing
         [ HH.button
             [ --HP.class_ $ B.btnLg
-              HP.classes [ B.btnLg, B.btnOutlineInfo ]
+              HP.classes [ B.btnLg, B.btnInfo ]
             , HE.onClick \_ -> Just NextQuestion
             ]
             [ HH.text "Next Question" ]
         ]
       _ -> []
-  in
+  in                                    -- Pass the other divs to the container
     HH.div [ HP.classes [ B.containerFluid ] ]
-      $ [ HH.div [ HP.classes [ B.h1 ] ] [ HH.text "SciQs" ]
-        , HH.div_ [ mkButton "New Game" NewGame ]
-        , HH.div_ [ HH.text $ "Score: " <> show s.score ]
-        , questionBlock
+      $ [ HH.div [ HP.class_ B.row ]    -- See https://getbootstrap.com/docs/4.4/layout/grid/
+          [ HH.div [ HP.classes [ B.h1, B.col4 ] ] [ HH.text "Random Science" ] -- ]
+        --, HH.div [ HP.class_ B.row ]
+          , HH.div [ HP.classes [ B.h5, B.col8 ] ] [ HH.text "A markov-chain powered quiz game"] ]
+        , HH.div [ HP.class_ B.row ]
+            [ HH.div [ HP.classes [B.col4] ] 
+            [ HH.div_  [ mkButton "New Game" NewGame ]
+            , HH.div_ [ HH.text $ "Score: " <> show s.score ]
+            ]
+        , HH.div [ HP.classes [B.col8] ]
+            [ questionBlock ]
+          ]
+        -- , HH.div [ HP.class_ B.row ]
+        --   [ HH.div [ HP.classes [ B.col8 ] ] nextQuestionBtn ]  
         ]
-      <> nextQuestionBtn                -- Append this button ouside the div
+      -- <> nextQuestionBtn                -- Append this button ouside the div
+{- 
+  - Render NewGame button, score and nextQuestionBtn in second column
+  - Render a sidebar / line to separate the columns
+-}
 
 -- | Shows how to use actions to update the component's state
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
