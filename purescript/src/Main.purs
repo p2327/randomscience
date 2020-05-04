@@ -4,8 +4,9 @@ import Prelude
 import Affjax as AX
 import Affjax.ResponseFormat as ResponseFormat
 import Data.Array (mapWithIndex)
+import Data.Array
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Halogen as H
@@ -18,48 +19,43 @@ import Halogen.Themes.Bootstrap4 as B
 import Halogen.VDom.Driver (runUI)
 import Simple.JSON as SimpleJSON
 
--- Server url
+-- | Server url
 questionServiceUrl :: String
 questionServiceUrl = "http://localhost:8080/question"
 
--- Question type used for both JSON parsing and state
+-- | Question type matches the JSON response with a record
 type Question
-  = { questionText :: String
-    , answers :: Array String
+  = { questionText  :: String
+    , answers       :: Array String
     , correctAnswer :: Int
     }
 
 data Action
-  = NewGame
-  | ClickAnswer Int -- This action handles both creation and color
-  | NextQuestion
+  = NewGame                            -- Start a new game
+  | ClickAnswer Int                    -- Click on an answer
+  | NextQuestion                       -- Receive an AJAX response with a question
 
--- | Toggle Int
 data Status
-  = WaitingForQuestion
-  | HaveQuestion Question (Maybe Int)
-  | Failure String
+  = WaitingForQuestion                 -- Waiting for server response
+  | HaveQuestion Question (Maybe Int)  -- Which answer has been clicked for the current question
+  | Failure String                     -- Failed to get server response
 
 type State
-  = { score :: Int
-    , status :: Status
-    --, buttonClicked :: Boolean
-    , buttonClicked :: Maybe Int
+  = { score         :: Int             
+    , status        :: Status
+    , buttonClicked :: Maybe Int       -- What button has been clicked
     }
 
--- Start out with no questions.
+-- | Start out with no questions.
 initialState :: State
-initialState = { score: 0, status: WaitingForQuestion, buttonClicked: Nothing } --buttonClicked: false }
+initialState = { score: 0, status: WaitingForQuestion, buttonClicked: Nothing }
 
--- Helper function for creating buttons that trigger an action
-mkButton :: forall a. State -> Int -> String -> Action -> HH.HTML a Action
-mkButton s idx str act =
+-- | Helper function for creating buttons that trigger an action.
+mkButton :: forall a. String -> Action -> HH.HTML a Action
+mkButton str act =
   HH.button
-    -- HP.classes [ B.btnLg, B.btnBlock ]
-    -- HP.classes if s.buttonClicked == Just idx then [ {- B.btnSucces -} B.btnBlock ] else [ B.btnLg, B.btnBlock ] HP.class_ $ HH.ClassName $ if s.buttonClicked == Just idx then "clickedButton" else "notClickedButton"
-    --HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
-    --HP.class_ $ HH.ClassName $ if s.buttonClicked then "clickedButton" else "notClickedButton"
     [ HE.onClick \_ -> Just act
+    , HP.classes [ B.btnLg, B.btnInfo ]
     ]
     [ HH.text str ]
 
@@ -79,7 +75,7 @@ render s =
                       $ if idx == question.correctAnswer then
                           "Correct"
                         else
-                          "Incorrect"
+                          "Incorrect, the right answer is " <> show (fromMaybe "" (question.answers !! question.correctAnswer))
                   ]
               ]
         in
@@ -90,20 +86,20 @@ render s =
             <> answerSummary
       Failure str -> HH.text $ "Failed: " <> str
 
-    mkAnswerButton idx str =
+    mkAnswerButton idx str =           -- Renders a button that:
       let
-        style = case s.status of
-          HaveQuestion q (Just i) ->
+        style = case s.status of       -- has different style depending on HaveQuesiton state
+          HaveQuestion q (Just i) ->   -- and if the clicked answer matches the correct one
             if i == idx then
               if q.correctAnswer == i then
-                [ B.btnSuccess ]
+                [ B.btnLg, B.btnSuccess ]
               else
-                [ B.btnDanger ]
-            else
-              []
-          _ -> []
+                [ B.btnLg, B.btnDanger ]
+            else                       -- Buttons not clickec
+              [ B.btnLg, B.btnOutlineSecondary]
+          _ -> [ B.btnLg, B.btnOutlineDark ]             -- If no answer has been clicked, style is just large button
 
-        act = case s.status of
+        act = case s.status of         -- On click, triggers ClickAnswer 
           HaveQuestion q Nothing -> Just $ ClickAnswer idx
           _ -> Nothing
       in
@@ -112,11 +108,13 @@ render s =
           , HP.classes style
           ]
           [ HH.text str ]
-
-    nextQuestionBtn = case s.status of
-      HaveQuestion q (Just i) ->
+    
+    nextQuestionBtn = case s.status of  -- Renders the next question button       
+      HaveQuestion q (Just i) ->        -- only when HaveQuestion is not Nothing
         [ HH.button
-            [ HE.onClick \_ -> Just NextQuestion
+            [ --HP.class_ $ B.btnLg
+              HP.classes [ B.btnLg, B.btnOutlineInfo ]
+            , HE.onClick \_ -> Just NextQuestion
             ]
             [ HH.text "Next Question" ]
         ]
@@ -124,11 +122,11 @@ render s =
   in
     HH.div [ HP.classes [ B.containerFluid ] ]
       $ [ HH.div [ HP.classes [ B.h1 ] ] [ HH.text "SciQs" ]
-        , HH.div_ [ mkButton s 0 "New Game" NewGame ] -- remove these 0s
+        , HH.div_ [ mkButton "New Game" NewGame ]
         , HH.div_ [ HH.text $ "Score: " <> show s.score ]
         , questionBlock
         ]
-      <> nextQuestionBtn
+      <> nextQuestionBtn                -- Append this button ouside the div
 
 -- | Shows how to use actions to update the component's state
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
@@ -137,16 +135,13 @@ handleAction = case _ of
     H.modify_ \s -> s { score = 0 }
     handleAction NextQuestion
   ClickAnswer idx -> do
-    -- Handles 2 actions with H.modify and recursive call to handleAction Toggle
     H.modify_ \s -> case s.status of
       HaveQuestion q _ ->
         let
           points = if idx == q.correctAnswer then 1 else 0
-        --correctIdx = if idx == q.correctAnswer then Just idx else Nothing
         in
           s { status = HaveQuestion q (Just idx), score = s.score + points }
       _ -> s { status = Failure $ "Somehow clicked idx " <> show idx <> " when not in question display state" }
-  --handleAction Toggle idx
   NextQuestion -> do
     H.modify_ \s -> s { status = WaitingForQuestion }
     result <- liftAff $ AX.get ResponseFormat.string questionServiceUrl
@@ -157,18 +152,7 @@ handleAction = case _ of
           H.modify_ \s -> s { status = HaveQuestion r Nothing }
         Left e -> H.modify_ \s -> s { status = Failure $ "Can't parse JSON. " <> show e }
 
-{-
-  Toggle idx ->
-    H.modify_ \s -> case s.buttonClicked of
-      IsCorrect q _ ->
-        let
-          correctIdx = if idx == q.correctAnswer then Just idx else Nothing
-        in
-          s { buttonClicked = Just correctIdx }
-      _ -> s { buttonClicked = Nothing}
-    --H.modify_ \s -> s { buttonClicked = not s.buttonClicked }
-    --H.modify_ \s -> s { buttonClicked = Just idx }
-  -}
+
 component :: forall q i o m. MonadAff m => H.Component HH.HTML q i o m
 component =
   H.mkComponent
