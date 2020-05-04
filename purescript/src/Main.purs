@@ -95,12 +95,12 @@ render s =
           HaveQuestion q (Just i) ->   -- and if the clicked answer matches the correct one
             if i == idx then
               if q.correctAnswer == i then
-                [ B.btnLg, B.btnSuccess ]
+                [ B.btnLg, B.btnSuccess, B.btnBlock ]
               else
-                [ B.btnLg, B.btnDanger ]
+                [ B.btnLg, B.btnDanger, B.btnBlock ]
             else                       -- Buttons not clicked
-              [ B.btnLg, B.btnOutlineSecondary]
-          _ -> [ B.btnLg, B.btnOutlineDark ]             -- If no answer has been clicked, style is just large button
+              [ B.btnLg, B.btnOutlineSecondary, B.btnBlock ]
+          _ -> [ B.btnLg, B.btnOutlineDark, B.btnBlock ]     -- If no answer has been clicked, style is just large button
 
         act = case s.status of         -- On click, triggers ClickAnswer 
           HaveQuestion q Nothing -> Just $ ClickAnswer idx
@@ -122,24 +122,29 @@ render s =
             [ HH.text "Next Question" ]
         ]
       _ -> []
-  in                                    -- Pass the other divs to the container
+  in                                                             -- Pass the other divs to the container with $ ?
     HH.div [ HP.classes [ B.containerFluid ] ]
-      $ [ HH.div [ HP.class_ B.row ]    -- See https://getbootstrap.com/docs/4.4/layout/grid/
-          [ HH.div [ HP.classes [ B.h1, B.col4 ] ] [ HH.text "Random Science" ] -- ]
-        --, HH.div [ HP.class_ B.row ]
-          , HH.div [ HP.classes [ B.h5, B.col8 ] ] [ HH.text "A markov-chain powered quiz game"] ]
+      $ [ HH.div [ HP.class_ B.row ]                             -- See https://getbootstrap.com/docs/4.4/layout/grid/
+            [ HH.div [ HP.classes [ B.h1, B.col4 ] ] 
+              [ HH.div_ [ HH.text "Random Science" ]
+              ]
+            , HH.div [ HP.classes [B.col8] ] 
+              [ HH.text "Placeholder for explanatory text"]
+              ]      
         , HH.div [ HP.class_ B.row ]
-            [ HH.div [ HP.classes [B.col4] ] 
-            [ HH.div_  [ mkButton "New Game" NewGame ]
-            , HH.div_ [ HH.text $ "Score: " <> show s.score ]
-            ]
-        , HH.div [ HP.classes [B.col8] ]
-            [ questionBlock ]
-          ]
-        -- , HH.div [ HP.class_ B.row ]
-        --   [ HH.div [ HP.classes [ B.col8 ] ] nextQuestionBtn ]  
+              [ HH.div [ HP.classes [ B.h5, B.col4 ] ] 
+              [ HH.text "A markov-chain powered quiz game"] ]
+        , HH.div [ HP.class_ B.row ]
+            [ HH.div [ HP.classes [B.col4] ]                     
+              [ HH.div_ [ mkButton "New Game" NewGame ]
+              , HH.div_ [ HH.text $ "Score: " <> show s.score ]      
+              ]
+            , HH.div [ HP.classes [B.col8] ]                    -- How to show a border for this column ?
+                [ questionBlock ]
+            ]            
         ]
       -- <> nextQuestionBtn                -- Append this button ouside the div
+                                           -- Moved to questionBlock to render under the questions
 {- 
   - Render NewGame button, score and nextQuestionBtn in second column
   - Render a sidebar / line to separate the columns
