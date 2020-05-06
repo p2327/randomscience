@@ -1,11 +1,12 @@
 module Main where
 
-import Data.Array
+
 import Prelude
 
 import Affjax as AX
 import Affjax.ResponseFormat as ResponseFormat
-import Data.Array (mapWithIndex)
+-- import Data.Array (mapWithIndex)
+import Data.Array
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -13,13 +14,14 @@ import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Halogen as H
 import Halogen.Aff as HA
-import Halogen.HTML (ClassName(..))
+-- import Halogen.HTML (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Themes.Bootstrap4 as B
 import Halogen.VDom.Driver (runUI)
 import Simple.JSON as SimpleJSON
+import Utils (css)
 
 -- | Server url
 questionServiceUrl :: String
@@ -89,21 +91,21 @@ render s =
             <> nextQuestionBtn
       Failure str -> HH.text $ "Failed: " <> str
 
-    mkAnswerButton idx str =           -- Renders a button that:
+    mkAnswerButton idx str =                                 -- Renders a button that:
       let
-        style = case s.status of       -- has different style depending on HaveQuesiton state
-          HaveQuestion q (Just i) ->   -- and if the clicked answer matches the correct one
+        style = case s.status of                             -- has different style depending on HaveQuesiton state
+          HaveQuestion q (Just i) ->                         -- and if the clicked answer matches the correct one
             if i == idx then
               if q.correctAnswer == i then
                 [ B.btnLg, B.btnSuccess, B.btnBlock ]
               else
                 [ B.btnLg, B.btnDanger, B.btnBlock ]
-            else                       -- Buttons not clicked
-              [ B.btnLg, B.btnOutlineSecondary, B.btnBlock ]
-          _ -> [ B.btnLg, B.btnOutlineDark, B.btnBlock ]     -- If no answer has been clicked, style is just large button
+            else                      
+              [ B.btnLg, B.btnOutlineSecondary, B.btnBlock ] -- Buttons not clicked
+          _ -> [ B.btnLg, B.btnOutlineDark, B.btnBlock ]     -- If no answer has been clicked
 
-        act = case s.status of         -- On click, triggers ClickAnswer 
-          HaveQuestion q Nothing -> Just $ ClickAnswer idx
+        act = case s.status of                               -- On click, triggers ClickAnswer 
+          HaveQuestion q Nothing -> Just $ ClickAnswer idx          
           _ -> Nothing
       in
         HH.button
@@ -112,37 +114,48 @@ render s =
           ]
           [ HH.text str ]
     
-    nextQuestionBtn = case s.status of  -- Renders the next question button       
-      HaveQuestion q (Just i) ->        -- only when HaveQuestion is not Nothing
+    nextQuestionBtn = case s.status of                       -- Renders the next question button       
+      HaveQuestion q (Just i) ->                             -- only when HaveQuestion is not Nothing
         [ HH.button
-            [ --HP.class_ $ B.btnLg
-              HP.classes [ B.btnLg, B.btnInfo ]
+            [ HP.classes [ B.btnLg, B.btnInfo ]
             , HE.onClick \_ -> Just NextQuestion
             ]
             [ HH.text "Next Question" ]
         ]
       _ -> []
-  in                                                             -- Pass the other divs to the container with $ ?
-    HH.div [ HP.classes [ B.containerFluid ] ]
-      $ [ HH.div [ HP.class_ B.row ]                             -- See https://getbootstrap.com/docs/4.4/layout/grid/
-            [ HH.div [ HP.classes [ B.h1, B.col4 ] ] 
-              [ HH.div_ [ HH.text "Random Science" ]
-              ]
-            , HH.div [ HP.classes [B.col8] ] 
-              [ HH.text "Placeholder for explanatory text"]
-              ]      
-        , HH.div [ HP.class_ B.row ]
-              [ HH.div [ HP.classes [ B.h5, B.col4 ] ] 
-              [ HH.text "A markov-chain powered quiz game"] ]
-        , HH.div [ HP.class_ B.row ]
-            [ HH.div [ HP.classes [B.col4] ]                     
-              [ HH.div_ [ mkButton "New Game" NewGame ]
-              , HH.div_ [ HH.text $ "Score: " <> show s.score ]      
-              ]
-            , HH.div [ HP.classes [B.col8] ]                    -- How to show a border for this column ?
-                [ questionBlock ]
-            ]            
-        ]
+  in                                                         -- Pass the other divs to the container with $ ?
+    HH.div 
+        [ HP.classes [ B.containerFluid ] ]
+        $ [ HH.div 
+            [ HP.class_ B.row ]                              -- See https://getbootstrap.com/docs/4.4/layout/grid/
+              [ HH.div 
+                [ HP.classes [ B.h1, B.col4 ] ] 
+                  [ HH.div_ 
+                    [ HH.text "Random Science" ]
+                  ]
+              , HH.div 
+                [ HP.classes [B.col8] ] 
+                  [ HH.text "Placeholder for explanatory text"]
+                ]      
+          , HH.div 
+            [ HP.class_ B.row ]
+              [ HH.div 
+                [ HP.classes [ B.h5, B.col4 ] ] 
+                  [ HH.text "A markov-chain powered quiz game"] ]
+          , HH.div 
+            [ HP.class_ B.row ]
+              [ HH.div 
+                [ HP.classes [B.col4] ]                     
+                  [ HH.div_ 
+                    [ mkButton "New Game" NewGame ]
+                  , HH.div_ 
+                    [ HH.text $ "Score: " <> show s.score ]      
+                  ]
+              , HH.div 
+                [ HP.classes [B.col8] ]                        -- How to show a border for this column ?
+                  [ questionBlock ]
+              ]            
+          ]
       -- <> nextQuestionBtn                -- Append this button ouside the div
                                            -- Moved to questionBlock to render under the questions
 {- 

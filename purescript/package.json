@@ -6,5 +6,9 @@
   },
   "dependencies": {
     "xhr2": "^0.2.0"
+  },
+  "scripts": {
+    "build": "spago bundle-app --main Main --to dist/app.js",
+    "serve": "parcel serve assets/index.html -o index--parcelified.html --open"
   }
 }
