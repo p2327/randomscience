@@ -21,9 +21,6 @@ Area in header for image
         word-spacing: 5px;
         overflow-wrap: break-word;
       }
-      .h5 {
-        font-family: Verdana, Geneva, Tahoma, sans-serif;
-      }
       .button {
         background-color: salmon;
         border-radius: 4px;
@@ -35,7 +32,7 @@ Area in header for image
         text-decoration: none;
         display: inline-block;
         font-size: 16px;
-        margin: 4px 2px;
+        margin-right: 0.5em;
         cursor: crosshair;
         text-transform: uppercase;
         text-shadow: 1px 2px 2px chocolate,
@@ -57,7 +54,9 @@ Area in header for image
       }
       .answerBlock {
         margin-top: 0.5em;
-
+      }
+      .answerText {
+        text-transform: uppercase;        
       }
       .answerSummary {
         margin-top: 1em;
@@ -69,6 +68,12 @@ Area in header for image
       }
       .footer {
           grid-area: ft;
+          margin-right: 1em;
+          margin-top: 0.5em;
+          margin-left: 1em;
+          position: absolute;
+          bottom: 0;
+          right: 1.5em;
       }
       .content {
           grid-area: main;
@@ -81,7 +86,9 @@ Area in header for image
           border-right: 2px solid black;
           margin-top: 1em;
           margin-bottom: 1em;
-          height: 100%;
+          min-height: 700px;
+          height: auto !important;
+          height: 700px;
       }
       .top {
           grid-area: top;

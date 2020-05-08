@@ -25,7 +25,9 @@ import Utils (css, classes)
 
 -- | Server url
 questionServiceUrl :: String
-questionServiceUrl = "http://localhost:8080/question"
+--questionServiceUrl = "http://localhost:8080/question"
+--questionServiceUrl = "http://54.174.99.38/question"
+questionServiceUrl = "https://randomscience.ew.r.appspot.com/"
 
 -- | Question type matches the JSON response with a record
 type Question
@@ -159,6 +161,12 @@ render s =
               , HH.div 
                   [ css "content" ]                        -- How to show a border for this column ?
                       [ questionBlock ]
+              , HH.div
+                  [ classes [ "footer", "text" ] ]
+                    [ HH.a 
+                      [ HP.href "https://www.w3schools.com"] 
+                      [ HH.text "I am the footer" ]
+                    ]
             ]
 
             
