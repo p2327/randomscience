@@ -8,3 +8,7 @@ import Halogen.HTML.Properties as HP
 -- | Helper shorthand for `class_ $ ClassName` and `classes []`
 css :: forall r i. String -> HH.IProp ( class :: String | r ) i
 css = HP.class_ <<< HH.ClassName
+
+
+classes :: Array String -> _
+classes = HP.classes <<< map HH.ClassName

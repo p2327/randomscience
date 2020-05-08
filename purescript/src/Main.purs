@@ -1,27 +1,27 @@
 module Main where
 
 
+import Data.Array
 import Prelude
 
 import Affjax as AX
 import Affjax.ResponseFormat as ResponseFormat
--- import Data.Array (mapWithIndex)
-import Data.Array
-
+import Color.Scale (cssColorStops)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
+import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.Aff as HA
--- import Halogen.HTML (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties (ButtonType(..))
 import Halogen.HTML.Properties as HP
 import Halogen.Themes.Bootstrap4 as B
 import Halogen.VDom.Driver (runUI)
 import Simple.JSON as SimpleJSON
-import Utils (css)
+import Utils (css, classes)
 
 -- | Server url
 questionServiceUrl :: String
@@ -59,7 +59,9 @@ mkButton :: forall a. String -> Action -> HH.HTML a Action
 mkButton str act =
   HH.button
     [ HE.onClick \_ -> Just act
-    , HP.classes [ B.btnLg, B.btnOutlineInfo ]
+    --, HP.classes [ B.btnLg, B.btnOutlineInfo ]
+    , HP.type_ ButtonButton
+    , css "button"
     ]
     [ HH.text str ]
 
@@ -74,21 +76,23 @@ render s =
           answerSummary = case maybeAnswer of
             Nothing -> []
             Just idx ->
-              [ HH.div_
+              [ HH.div
+                [ classes ["answerSummary", "text" ] ]
                   [ HH.text
                       $ if idx == question.correctAnswer then
-                          "Correct"
+                          "Correct!"
                         else
                           "Incorrect, the right answer is " <> show (fromMaybe "" (question.answers !! question.correctAnswer))
                   ]
               ]
         in
-          HH.div_
+          HH.div
+            [ css "text" ]
             $ [ HH.text question.questionText
               ]
-            <> mapWithIndex (\idx txt -> HH.div_ [ mkAnswerButton idx txt ]) question.answers
+            <> mapWithIndex (\idx txt -> HH.div [ css "answerBlock" ] [ mkAnswerButton idx txt ]) question.answers
             <> answerSummary
-            <> nextQuestionBtn
+            <> nextQuestionBtn                               -- Append next question button here
       Failure str -> HH.text $ "Failed: " <> str
 
     mkAnswerButton idx str =                                 -- Renders a button that:
@@ -101,7 +105,7 @@ render s =
               else
                 [ B.btnLg, B.btnDanger, B.btnBlock ]
             else                      
-              [ B.btnLg, B.btnOutlineSecondary, B.btnBlock ] -- Buttons not clicked
+              [ B.btnLg, B.btnOutlineSecondary, B.btnBlock, HH.ClassName "disabled" ] -- Buttons not clicked
           _ -> [ B.btnLg, B.btnOutlineDark, B.btnBlock ]     -- If no answer has been clicked
 
         act = case s.status of                               -- On click, triggers ClickAnswer 
@@ -116,46 +120,78 @@ render s =
     
     nextQuestionBtn = case s.status of                       -- Renders the next question button       
       HaveQuestion q (Just i) ->                             -- only when HaveQuestion is not Nothing
-        [ HH.button
-            [ HP.classes [ B.btnLg, B.btnInfo ]
-            , HE.onClick \_ -> Just NextQuestion
+            [ HH.button
+                --[ HP.classes [ B.btnLg, B.btnInfo ]
+                [ css "button" 
+                , HE.onClick \_ -> Just NextQuestion
+                ]
+                [ HH.text "Next Question" ]
             ]
-            [ HH.text "Next Question" ]
-        ]
       _ -> []
-  in                                                         -- Pass the other divs to the container with $ ?
+  in
     HH.div 
-        [ HP.classes [ B.containerFluid ] ]
-        $ [ HH.div 
-            [ HP.class_ B.row ]                              -- See https://getbootstrap.com/docs/4.4/layout/grid/
-              [ HH.div 
-                [ HP.classes [ B.h1, B.col4 ] ] 
-                  [ HH.div_ 
-                    [ HH.text "Random Science" ]
+        [ css "wrapper" ]
+          $ [ HH.div 
+              [ classes [ "header", "sidebar" ] ]                              -- See https://getbootstrap.com/docs/4.4/layout/grid/
+                [ HH.div_ 
+                    [ HH.div
+                      [ css "h1" ] 
+                        [ HH.text "Random Science" ]
+                      , HH.div_
+                          [ HH.div
+                            [ css "text"]
+                              [ HH.text "A markov-chain powered quiz game"] 
+                          ]
+                      , HH.div_
+                        [ mkButton "New Game" NewGame ]
+                      , HH.div
+                          [ css "text" ]
+                            [ HH.div_ 
+                            [ HH.text $ "Score: " <> show s.score ]      
+                            ]
+                      ]
                   ]
               , HH.div 
-                [ HP.classes [B.col8] ] 
-                  [ HH.text "Placeholder for explanatory text"]
-                ]      
-          , HH.div 
-            [ HP.class_ B.row ]
-              [ HH.div 
-                [ HP.classes [ B.h5, B.col4 ] ] 
-                  [ HH.text "A markov-chain powered quiz game"] ]
-          , HH.div 
-            [ HP.class_ B.row ]
-              [ HH.div 
-                [ HP.classes [B.col4] ]                     
-                  [ HH.div_ 
-                    [ mkButton "New Game" NewGame ]
-                  , HH.div_ 
-                    [ HH.text $ "Score: " <> show s.score ]      
+                [ css "top" ]
+                  [ HH.div_                   
+                    [ HH.text "" ]
                   ]
               , HH.div 
-                [ HP.classes [B.col8] ]                        -- How to show a border for this column ?
-                  [ questionBlock ]
-              ]            
-          ]
+                  [ css "content" ]                        -- How to show a border for this column ?
+                      [ questionBlock ]
+            ]
+
+            
+
+    
+
+
+    
+        
+                    
+              
+    
+    
+
+    
+    
+        
+
+
+
+          {-
+                            , HH.div 
+                    [ HP.classes [ B.col8 ] ] 
+                      [ HH.text "Placeholder for explanatory text"]
+                    ]      
+
+                                      , HH.div 
+                    [ HP.classes [ B.col8 ] ]                        
+                      [ questionBlock ]
+                  ]                   
+  
+      -}
+    
       -- <> nextQuestionBtn                -- Append this button ouside the div
                                            -- Moved to questionBlock to render under the questions
 {- 
