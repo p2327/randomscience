@@ -1,9 +1,8 @@
-### Random Science
+## Random Science
 
 Files for *randomscience*, a web application built in Python and Purescript / Halogen. 
 
 The app is [markov chain](https://setosa.io/ev/markov-chains/) powered science quiz based off the [Allen Institute for AI](https://allenai.org/data?o=21) science questions dataset.
-
 Here is a wireframe
 ![science quiz](https://raw.githubusercontent.com/p2327/randomscience/master/wireframe.png)
 
